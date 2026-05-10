@@ -45,6 +45,14 @@ If device traffic is split in multiple files, first merge by device with:
 
 For this project setup, keep final merged files in `.pcap` format and process those.
 
+## Data Access
+
+The dataset used in this project is available at:
+
+- **Project PCAP data link**: https://polimi365-my.sharepoint.com/:f:/r/personal/10692910_polimi_it/Documents/Probe%20Dataset%202026?csf=1&web=1&e=Rrhqr9
+
+After downloading, place the dataset so that each device is represented by one `.pcap` file, then point `pcap_processing/config_pcap_processing.ini` to the correct paths.
+
 ## End-to-End Workflow
 
 1. Parse raw PCAPs into CSV features.
