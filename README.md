@@ -102,7 +102,7 @@ Outputs:
 - `bitmask_patterns_sliding_window.csv` (if `FILTERS` configured)
 
 ## 3) Dataset Balancing
-
+This process balances the probe for the various classes (devices) and outputs a dataset with the same number of entires for each device, maintaining the probe differentiation ratio (e.g., different probes for the same device have the original ratio in the output). The number of probes per device can be customized in the script (n_entries_per_devices variable)
 Run:
 
 ```bash
