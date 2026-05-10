@@ -3,8 +3,6 @@ import pandas as pd
 from sklearn import metrics
 from sklearn.cluster import DBSCAN
 from sklearn.metrics import (homogeneity_score,completeness_score,v_measure_score,adjusted_rand_score,normalized_mutual_info_score,root_mean_squared_error)
-import sys
-sys.path.append("C:/Users/fabio/Ricerca/Codice/2026_Bamboo_Journal/well_structured")
 
 
 def map_clusters_to_labels(y_true, cluster_labels):

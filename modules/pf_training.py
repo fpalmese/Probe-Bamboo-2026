@@ -141,12 +141,4 @@ def get_train_data_pf(bin_df, num_bits=64):
     indexes = [i for i, value in enumerate(u_filtering) if value >= fingerprint_threshold]
     sorted_indexes = sorted(indexes, key=lambda i: u_filtering[i], reverse=True)
     sorted_indexes = sorted_indexes[:num_bits]
-    indexes_df = pd.DataFrame(sorted_indexes, columns=["Index"])
     return fingerprint_threshold, u_filtering, indexes
-    
-if __name__ == "__main__":
-    df_concatenated = pd.read_csv("C:/Users/fabio/Ricerca/Codice/2026_Bamboo_Journal/data/train_test/bin_train_P+B.csv")
-    num_bits = 32
-    indexes_df = train_pf(df_concatenated, num_bits=num_bits)
-    M = len(indexes_df)
-    print(f"N: {num_bits} - Number of bits selected (M): {M}")

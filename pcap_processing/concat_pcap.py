@@ -1,7 +1,7 @@
 import os
 import sys
 
-PCAPS_ROOT = r"C:/Users/fabio/Ricerca/Codice/2026_Bamboo_Journal/well_structured/data/pcap/Pintor_New/"
+PCAPS_ROOT = r"/data/pcaps/dataset1/"
 
 # Common magic signatures
 PCAP_MAGIC_LE = b'\xd4\xc3\xb2\xa1'   # libpcap little-endian (microsecond)

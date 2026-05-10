@@ -3,8 +3,6 @@ import pandas as pd
 from sklearn.metrics import roc_curve
 import numpy as np
 import pandas as pd
-import sys
-sys.path.append("C:/Users/fabio/Ricerca/Codice/2026_Bamboo_Journal/well_structured")
 from modules.utils.validation_utils import generateHexPairDf, sum_ascii_from_hex, min_max_normalize, plot_roc_curves_from_files
 import os
 
@@ -74,8 +72,3 @@ def collect_csvs_and_concatenate(directory):
     # Concatenate all dataframes
     combined_df = pd.concat(df_list, ignore_index=True)
     return combined_df
-
-if __name__ == "__main__":
-    hex_file = pd.read_csv("C:/Users/fabio/Ricerca/Codice/2026_Bamboo_Journal/well_structured/data/interim/hex_full_balanced.csv", dtype=str)
-    validation_pairs_df = pd.read_csv(f"C:/Users/fabio/Ricerca/Codice/2026_Bamboo_Journal/well_structured/results/cycle_0/validation_pairs.csv", index_col=0)
-    get_pintor_validation_data(hex_file, validation_pairs_df, roc_save_path=".")

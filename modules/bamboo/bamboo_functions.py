@@ -1,17 +1,11 @@
-#!/usr/bin/env python
-
 import gc
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
-
 import numpy as np
 import pandas as pd
 from rich import traceback
 from rich.console import Console
 from rich.progress import Progress
-
-import sys
-sys.path.append("C:/Users/fabio/Ricerca/Codice/2026_Bamboo_Journal/well_structured")
 
 import modules.bamboo.utils as utils
 
@@ -271,14 +265,3 @@ def train_bamboo(bin_df, train_pairs_df, advanced_filters_df, bamboo_output_file
             weights /= weights.sum()
             gc.collect()
             progress.update(iteration_task, advance=1)
-
-if __name__ == "__main__":
-    #bin_df = pd.read_csv("C:/Users/fabio/Ricerca/Codice/2026_Bamboo_Journal/data/train_test/bin_train_P+B.csv", index_col=0,dtype=str)
-    #pair_df = pd.read_csv("C:/Users/fabio/Ricerca/Codice/2026_Bamboo_Journal/data/train_test/bin_train_pairs_P+B.csv", index_col=0)
-    #filters_df = pd.read_csv("C:/Users/fabio/Ricerca/Codice/2026_Bamboo_Journal/data/filters/bitmask_patterns_sliding_window.csv", index_col=0)
-    
-    bin_df = pd.read_csv("C:/Users/fabio/Ricerca/Codice/2026_Bamboo_Journal/well_structured/data/interim/binary_U_balanced.csv", index_col=0,dtype=str)
-    pair_df = pd.read_csv("C:/Users/fabio/Ricerca/Codice/2026_Bamboo_Journal/well_structured/results/cycle_0/train_pairs.csv", index_col=0)
-    filters_df = pd.read_csv("C:/Users/fabio/Ricerca/Codice/2026_Bamboo_Journal/well_structured/data/filters/bitmask_patterns_sliding_window.csv", index_col=0)    
-    
-    train_bamboo(bin_df, pair_df, filters_df, bamboo_output_file="bamboo_output.csv", n_iterations=64, n_filters=0, max_workers=16)

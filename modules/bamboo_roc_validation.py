@@ -3,8 +3,6 @@ import pandas as pd
 from sklearn.metrics import roc_curve
 import numpy as np
 import pandas as pd
-import sys
-sys.path.append("C:/Users/fabio/Ricerca/Codice/2026_Bamboo_Journal/well_structured")
 from modules.utils.validation_utils import generateStringPairDf, hamming_distance, parse_bamboo_csv, plot_roc_curves_from_files, calculate_single_fprint, hamming_distance_real
 
 
@@ -111,15 +109,3 @@ def get_bamboo_validation_data(bin_0_df, validation_pairs_df, bamboo_log_csv, bi
             show_plot=False
         )
     return best_tau_df
-
-
-
-if __name__ == "__main__":
-    bin_0_df = pd.read_csv(f"C:/Users/fabio/Ricerca/Codice/2026_Bamboo_Journal/data/train_test/bin_test0_P+B.csv",dtype=str)
-    validation_pairs_df = pd.read_csv(f"C:/Users/fabio/Ricerca/Codice/2026_Bamboo_Journal/data/train_test/bin_test_pairs_P+B.csv", index_col=0)
-    num_bits = 64
-    bamboo_log_filename = "C:\\Users\\fabio\\Ricerca\\Codice\\2026_Bamboo_Journal\\well_structured\\modules\\BEST_FILTERS_40k.log"
-    bamboo_csv = "C:\\Users\\fabio\\Ricerca\\Codice\\2026_Bamboo_Journal\\well_structured\\modules\\bamboo_output.csv"
-    roc_save_path = "."
-    best_taus = get_bamboo_validation_data(bin_0_df, validation_pairs_df, bamboo_csv, bits_set=[8,16,32,64], hamming=False, roc_save_path=roc_save_path)
-    

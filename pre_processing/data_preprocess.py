@@ -54,4 +54,3 @@ def data_preprocess():
         
 if __name__ == "__main__":
     data_preprocess()
-    data_preprocess()

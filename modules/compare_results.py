@@ -1,6 +1,4 @@
 import matplotlib.pyplot as plt
-import sys
-sys.path.append("C:/Users/fabio/Ricerca/Codice/2026_Bamboo_Journal/well_structured")
 from modules.utils.validation_utils import compute_auc_from_file
 import pandas as pd
 import seaborn as sns
