@@ -129,6 +129,48 @@ Run:
 python main.py
 ```
 
+### Split Strategy (Device-Level Rotating Folds)
+
+The main process works at **device-label level** (not packet-level random split):
+
+1. Device labels are read from `binary_U_balanced.csv`.
+2. Labels are sorted, then shuffled once with `RANDOM_STATE=42`.
+3. For each cycle `t` in `range(N_FOLDS)`, `main.py` computes a rotated split with (to adapt depending your data size):
+   - `N_TEST = 20` device labels
+   - `N_VAL = 20` device labels
+   - `N_TRAIN = 23` device labels
+4. The start index is rotated by a fixed step (`step=N_TEST`), so across cycles the role of each device changes (test/val/train) in a deterministic way.
+
+This gives a reproducible cross-validation-like procedure with fixed partition sizes per cycle.
+
+### What Happens Inside a Cycle
+
+For each `cycle_t`:
+
+1. The script creates `results/cycle_t/` and saves `labels.txt` with train/val/test label lists.
+2. If training flags are enabled:
+   - Training pairs from `train_pairs.csv` file are used for BAMBOO training that produces the `bamboo_output.csv` (best filters/thresholds/confidence).
+   - PF training produces `pf/pf_indexes_<bits>bits.csv` for 8/16/32/64 bits.
+    
+3. If ROC validation flags are enabled:
+   - It builds or reuses `validation_pairs.csv` from validation labels. This file contains pairs of probe requests generated from the validation devices.
+   - BAMBOO writes ROC data + best taus in `bamboo/`.
+   - PF writes ROC data + best taus in `pf/`.
+   - PINTOR writes ROC data + best tau files in `pintor/`.
+4. If DBSCAN validation is enabled, it builds/reuses `val_combinations.csv`, searches best DBSCAN params, and stores them in each method folder. The file contains a list of 10 combinations of device labels from 1 to N size.
+5. If cluster test flags are enabled, it builds/reuses `test_combinations.csv` and runs final clustering methods for testing. DBSCAN and/or groupby method is used on test labels for producing the test results.
+
+### Shared Evaluation Design
+
+- **Same validation/test device sets** are used across BAMBOO, PF, and PINTOR in each cycle.
+- Pair generation is label-balanced (`N_PAIRS` positives and negatives per label role).
+- Method outputs are stored separately under:
+  - `results/cycle_t/bamboo/`
+  - `results/cycle_t/pf/`
+  - `results/cycle_t/pintor/`
+
+This keeps comparisons fair while preserving each method-specific feature construction and distance metric.
+
 Main inputs expected by default:
 - `/data/interim/binary_0_balanced.csv`
 - `/data/interim/binary_U_balanced.csv`
