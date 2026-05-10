@@ -30,6 +30,12 @@ def data_preprocess():
     print(f"Saved dataframe with concatenated binary features to: {output_file}. Shape: {concat_bin_df.shape}")
     print(f"Average length of the concatenated column: {concat_bin_df['concatenated'].str.len().mean()}")
     
+    # create a copy for the bin file with "U" replaced by "0" in the concatenated column, then save it as a new csv file
+    concat_bin_df_0 = concat_bin_df.copy()
+    concat_bin_df_0["concatenated"] = concat_bin_df_0["concatenated"].str.replace("U", "0")
+    output_file_0 = os.path.join(output_path, "binary_0_concatenated.csv")
+    concat_bin_df_0.to_csv(output_file_0, index=False)
+    
     # now merge all hex in one path
     hex_path = config["DEFAULT"]["hex_path"]
     hex_df = load_and_concat_csv(hex_path)

@@ -98,6 +98,7 @@ python pre_processing/data_preprocess.py
 
 Outputs:
 - `binary_U_concatenated.csv`
+- `binary_0_concatenated.csv` (same as above with `U -> 0`)
 - `hex_full.csv`
 - `bitmask_patterns_sliding_window.csv` (if `FILTERS` configured)
 
