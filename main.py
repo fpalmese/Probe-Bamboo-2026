@@ -1,5 +1,3 @@
-import sys
-
 from modules.bamboo.bamboo_functions import train_bamboo
 from modules.pf_training import train_pf
 from modules.pair_generator import generate_balanced_pairs_df
@@ -16,12 +14,12 @@ from modules.utils.validation_utils import prepare_pintor_features
 import ast
 
 # define interim data path
-data_folder = "C:/Users/fabio/Ricerca/Codice/2026_Bamboo_Journal/well_structured/data/interim/"
-out_folder = "C:/Users/fabio/Ricerca/Codice/2026_Bamboo_Journal/well_structured/results/"
+data_folder = "/data/interim/"
+out_folder = "/data/results/"
 bin_0_filename = "binary_0_balanced.csv"
 bin_U_filename = "binary_U_balanced.csv"
 hex_filename = "hex_full_balanced.csv"
-bamboo_filters_filename = "C:/Users/fabio/Ricerca/Codice/2026_Bamboo_Journal/well_structured/data/filters/bitmask_patterns_sliding_window.csv"
+bamboo_filters_filename = "/data/filters/bitmask_patterns_sliding_window.csv"
 
 N_FOLDS = 1 # set to 20 for full cross-val, for now max 10
 N_TEST = 20
