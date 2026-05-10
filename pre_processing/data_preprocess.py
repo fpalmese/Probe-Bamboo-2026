@@ -3,7 +3,7 @@ from configparser import ConfigParser
 from utils.preprocessing import apply_bin_concatenation, load_and_concat_csv,generate_filters_dataframe, clean_df
 
 # -------------------
-# 1. Create binary concatenated interim used for all the binary operations
+# 1. Create binary concatenated interim used for all the binary operations. Read all the binary files and create the binary_U_concatenated.csv and the hex_full.csv (after cleaning) in the interim folder.
 # 2. Generate filters dataframe if config section found
 # 
 # –------------------
