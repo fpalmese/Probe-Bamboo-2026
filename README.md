@@ -197,5 +197,6 @@ So the repo is BAMBOO-centric, while still containing reproducible methodology a
 ## Practical Notes
 
 - Run scripts from repository root (`Probe-Bamboo-2026/`) so relative paths/imports resolve consistently.
+- A practical sample walkthrough notebook is available at `sample1_practical_pipeline.ipynb` (sample1 practical README notebook) using the data provided in `data/sample1`.
 - No dependency manifest is included (`requirements.txt`/`pyproject.toml` absent), so environment setup is manual.
 - Main third-party packages used: `pandas`, `numpy`, `scikit-learn`, `matplotlib`, `seaborn`, `scapy`, `bitstring`, `rich`, `cowsay`.
