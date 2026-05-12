@@ -12,6 +12,7 @@ The code is designed around **PCAP (`.pcap`) captures** (not `.pcapng` in the ma
 ```text
 Probe-Bamboo-2026/
 ├── main.py                         # Main experiment/training/validation/testing pipeline
+├── sample1_practical_pipeline.ipynb# Sample notebook covering the full pipeline with a sample dataset
 ├── pcap_processing/
 │   ├── parse_pcaps.py              # Extracts hex/binary/dissected CSVs from .pcap files
 │   ├── concat_pcap.py              # Utility to merge split captures per device
