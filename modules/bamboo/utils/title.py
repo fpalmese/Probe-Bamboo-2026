@@ -4,7 +4,7 @@ import os
 
 def print_title():
     # Clear shell
-    os.system("clear")
+    os.system("cls" if os.name == "nt" else "clear")
 
     my_fish = r"""
     \

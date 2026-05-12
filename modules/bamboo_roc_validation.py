@@ -1,18 +1,38 @@
 import numpy as np
 import pandas as pd
+import os
 from sklearn.metrics import roc_curve
 import numpy as np
 import pandas as pd
 from modules.utils.validation_utils import generateStringPairDf, hamming_distance, parse_bamboo_csv, plot_roc_curves_from_files, calculate_single_fprint, hamming_distance_real
 
 
-def get_bamboo_validation_data(bin_0_df, validation_pairs_df, bamboo_log_csv, bits_set = [8,16,32,64], hamming=False, roc_save_path=None):
+def get_bamboo_validation_data(bin_0_df, validation_pairs_df, bamboo_log_csv, bits_set = [8,16,32,64], hamming=False, roc_save_path=None, show_plot=False):
     string_df = bin_0_df.copy()
     balanced_pairs_df = validation_pairs_df.copy()
     balanced_pairs_df.drop_duplicates(inplace=True)
     balanced_pairs_df.reset_index(drop=True, inplace=True)
 
+    # ensure bamboo log CSV exists
+    if not os.path.exists(bamboo_log_csv):
+        print(f"Bamboo log CSV not found: {bamboo_log_csv}. Returning empty best-tau DataFrame.")
+        return pd.DataFrame(columns=["M", "best_tau", "tpr", "fpr", "dist_to_(0,1)"])
+
     best_configs_df = parse_bamboo_csv(bamboo_log_csv)
+
+    # Sanitize numeric columns (thresholds, confidence) to avoid strings like 'inf' producing NaNs
+    if "confidence" in best_configs_df.columns:
+        best_configs_df["confidence"] = pd.to_numeric(best_configs_df["confidence"], errors="coerce")
+        # replace infinite with a large finite number to avoid inf/inf operations
+        best_configs_df["confidence"].replace([np.inf, -np.inf], 1e6, inplace=True)
+        best_configs_df["confidence"].fillna(0.0, inplace=True)
+    else:
+        best_configs_df["confidence"] = 0.0
+
+    if "best_threshold" in best_configs_df.columns:
+        best_configs_df["best_threshold"] = pd.to_numeric(best_configs_df["best_threshold"], errors="coerce").fillna(0).astype(int)
+    else:
+        best_configs_df["best_threshold"] = 0
 
     max_bits = max(bits_set)  # default to max if not specified
     if max_bits != 0:
@@ -63,11 +83,20 @@ def get_bamboo_validation_data(bin_0_df, validation_pairs_df, bamboo_log_csv, bi
         # score for ROC: higher = more positive
         scores = -dist
 
-        # ROC
-        fpr, tpr, thr = roc_curve(y01, scores)
-
-        # remove first ROC point (threshold = +inf)
-        fpr, tpr, thr = fpr[1:], tpr[1:], thr[1:]
+        # ROC: handle degenerate cases where only one class is present
+        if np.unique(y01).size < 2:
+            # fallback ROC: trivial line
+            fpr = np.array([0.0, 1.0])
+            tpr = np.array([0.0, 1.0])
+            thr = np.array([np.nan])
+        else:
+            fpr, tpr, thr = roc_curve(y01, scores)
+            # remove first ROC point (threshold = +inf) when available
+            if len(fpr) > 1:
+                fpr, tpr, thr = fpr[1:], tpr[1:], thr[1:]
+            else:
+                # keep as-is
+                pass
 
         # ---------- BEST TAU (closest to (0,1)) ----------
         roc_dist = np.sqrt(fpr**2 + (1 - tpr)**2)
@@ -106,6 +135,6 @@ def get_bamboo_validation_data(bin_0_df, validation_pairs_df, bamboo_log_csv, bi
             [f"{roc_save_path}/bamboo_roc_curve_data_{M}.csv" if not hamming else f"{roc_save_path}/bamboo_roc_curve_data_{M}_hamming.csv" for M in bits_set],
             [f"{M}-bit" for M in bits_set],
             roc_figure_name,
-            show_plot=False
+            show_plot=show_plot
         )
     return best_tau_df

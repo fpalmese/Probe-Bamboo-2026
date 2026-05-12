@@ -1,13 +1,15 @@
 import gc
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
+import os
 import numpy as np
 import pandas as pd
 from rich import traceback
 from rich.console import Console
 from rich.progress import Progress
-
-import modules.bamboo.utils as utils
+import sys
+sys.path.append(os.path.dirname(__file__))
+from modules.bamboo.utils import logger, progressBarUtil, title
 
 traceback.install()
 console = Console()
@@ -121,9 +123,9 @@ def _process_chunk(chunk_filters: np.ndarray, chunk_thresholds: list, pairs: Pai
 # ----------------------------- main -----------------------------
 # pass as input the training df, the training pairs index, the filters df, the output file name, the number of iterations (M) and the number of filters (F) to be used (if 0, all filters will be used)
 def train_bamboo(bin_df, train_pairs_df, advanced_filters_df, bamboo_output_file = "bamboo_output.csv",n_iterations=64, n_filters=0, max_workers=4):
-    utils.title.print_title()
+    title.print_title()
     
-    custom_columns = utils.progressBarUtil.generateColumns()    
+    custom_columns = progressBarUtil.generateColumns()    
 
     strings_df = bin_df.copy()
     # if dataset has two columns, use the first as index and the second as probes
@@ -157,7 +159,7 @@ def train_bamboo(bin_df, train_pairs_df, advanced_filters_df, bamboo_output_file
     filters = pd.DataFrame(thresholds_rows, columns=["filters", "thresholds"])
 
     # init log file
-    utils.logger.init_csv_file(bamboo_output_file)
+    logger.init_csv_file(bamboo_output_file)
     
     # pairs subset
     pairs_index = pairs_df
@@ -180,88 +182,121 @@ def train_bamboo(bin_df, train_pairs_df, advanced_filters_df, bamboo_output_file
         for start in range(0, n, size):
             yield slice(start, min(start + size, n))
 
-    with Progress(*custom_columns) as progress, ProcessPoolExecutor(max_workers=n_processes) as executor:
-        iteration_task = progress.add_task("[cyan]Going through iterations...", total=n_iterations)
+    # Use a quiet progress implementation when running inside Jupyter/IPython
+    try:
+        from IPython import get_ipython
+        _ip = get_ipython()
+        _in_notebook = bool(_ip and getattr(_ip, 'kernel', None))
+    except Exception:
+        _in_notebook = False
 
-        for _ in range(n_iterations):
-            filters_task = progress.add_task("[green]Processing filters...", total=n_processes)
+    class _NoOpProgress:
+        def __init__(self, *args, **kwargs):
+            pass
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc, tb):
+            return False
+        def add_task(self, *args, **kwargs):
+            return 0
+        def update(self, *args, **kwargs):
+            return None
 
-            # snapshot current filters table
-            f_arr = filters["filters"].to_numpy()
-            thr_arr = filters["thresholds"].tolist()
+    ProgressCls = _NoOpProgress if _in_notebook else Progress
 
-            futures = []
-            for sl in chunk_slices(len(filters), n_processes):
-                futures.append(
-                    executor.submit(
-                        _process_chunk,
-                        f_arr[sl],
-                        thr_arr[sl],
-                        pairs,
-                        weights,
+    # Temporarily reduce logger verbosity during heavy training loop to avoid flooding the notebook
+    _old_level = logger.log.level
+    try:
+        logger.log.setLevel("WARNING")
+
+        with ProgressCls(*custom_columns) as progress, ProcessPoolExecutor(max_workers=n_processes) as executor:
+            iteration_task = progress.add_task("[cyan]Going through iterations...", total=n_iterations)
+
+            for _ in range(n_iterations):
+                filters_task = progress.add_task("[green]Processing filters...", total=n_processes)
+
+                # snapshot current filters table
+                f_arr = filters["filters"].to_numpy()
+                thr_arr = filters["thresholds"].tolist()
+
+                futures = []
+                for sl in chunk_slices(len(filters), n_processes):
+                    futures.append(
+                        executor.submit(
+                            _process_chunk,
+                            f_arr[sl],
+                            thr_arr[sl],
+                            pairs,
+                            weights,
+                        )
                     )
-                )
 
-            errors = {}
-            for fut in as_completed(futures):
-                chunk_dict = fut.result()
-                errors.update(chunk_dict)
-                progress.update(filters_task, advance=1)
+                errors = {}
+                for fut in as_completed(futures):
+                    chunk_dict = fut.result()
+                    errors.update(chunk_dict)
+                    progress.update(filters_task, advance=1)
 
-            # single-pass best selection (no full sort)
-            best_key = None
-            best_err = None
-            best_width = None
-            best_thr = None
-            min_count = 0
+                # single-pass best selection (no full sort)
+                best_key = None
+                best_err = None
+                best_width = None
+                best_thr = None
+                min_count = 0
 
-            for (f_str, thr), err in errors.items():
-                if best_err is None or err < best_err:
-                    best_key = (f_str, thr)
-                    best_err = err
-                    best_width = _filter_width(f_str)
-                    best_thr = thr
-                    min_count = 1
-                elif err == best_err:
-                    min_count += 1
-                    # tie-break: smaller filter width, then smaller threshold
-                    w = _filter_width(f_str)
-                    if w < best_width or (w == best_width and thr < best_thr):
+                for (f_str, thr), err in errors.items():
+                    if best_err is None or err < best_err:
                         best_key = (f_str, thr)
                         best_err = err
-                        best_width = w
+                        best_width = _filter_width(f_str)
                         best_thr = thr
+                        min_count = 1
+                    elif err == best_err:
+                        min_count += 1
+                        # tie-break: smaller filter width, then smaller threshold
+                        w = _filter_width(f_str)
+                        if w < best_width or (w == best_width and thr < best_thr):
+                            best_key = (f_str, thr)
+                            best_err = err
+                            best_width = w
+                            best_thr = thr
 
-            if min_count > 1:
-                utils.logger.log.warning(f"There are {min_count} configurations with the minimum error.")
+                if min_count > 1:
+                    logger.log.warning(f"There are {min_count} configurations with the minimum error.")
 
-            best_filter, best_threshold = best_key
+                best_filter, best_threshold = best_key
 
-            # remove best filter row (matches original behavior: delete by filter string)
-            filters = filters[filters["filters"] != best_filter].reset_index(drop=True)
-            n_filters -= 1
+                # remove best filter row (matches original behavior: delete by filter string)
+                filters = filters[filters["filters"] != best_filter].reset_index(drop=True)
+                n_filters -= 1
 
-            # confidence
-            min_error = best_err if best_err != 0 else 1e-20
-            confidence = np.log((1.0 - min_error) / min_error)
+                # confidence
+                min_error = best_err if best_err != 0 else 1e-20
+                confidence = np.log((1.0 - min_error) / min_error)
 
-            utils.logger.print_best_config([best_filter, best_threshold, min_error, confidence])
-            utils.logger.store_best_config_to_csv([best_filter, best_threshold, min_error, confidence], bamboo_output_file)
-            # weight update (same math as your classifier.weight_update but avoids pandas conversions)
-            # compute predictions for just the chosen threshold (fast)
-            f = _filter_to_vector_np(best_filter).astype(np.int8, copy=False)
-            sa = (pairs.item1 * f).sum(axis=1, dtype=np.int16)
-            sb = (pairs.item2 * f).sum(axis=1, dtype=np.int16)
-            pa = np.where(sa - best_threshold > 0, 1, -1).astype(np.int8, copy=False)
-            pb = np.where(sb - best_threshold > 0, 1, -1).astype(np.int8, copy=False)
-            pred = pa * pb
+                logger.print_best_config([best_filter, best_threshold, min_error, confidence])
+                logger.store_best_config_to_csv([best_filter, best_threshold, min_error, confidence], bamboo_output_file)
+                # weight update (same math as your classifier.weight_update but avoids pandas conversions)
+                # compute predictions for just the chosen threshold (fast)
+                f = _filter_to_vector_np(best_filter).astype(np.int8, copy=False)
+                sa = (pairs.item1 * f).sum(axis=1, dtype=np.int16)
+                sb = (pairs.item2 * f).sum(axis=1, dtype=np.int16)
+                pa = np.where(sa - best_threshold > 0, 1, -1).astype(np.int8, copy=False)
+                pb = np.where(sb - best_threshold > 0, 1, -1).astype(np.int8, copy=False)
+                pred = pa * pb
 
-            # Asymmetric weight update to match original classifier.weight_update():
-            # - treat ground truth -1 as 0 (only positive class matters for boosting)
-            # - treat prediction 1 as 0; prediction -1 stays -1
-            # - boost weights only for (ground_truth==1 and prediction==-1)
-            mispred_pos = ((pairs.y == 1) & (pred == -1)).astype(np.int8)
-            weights = weights * np.where(mispred_pos == 1, np.exp(confidence), 1.0)
-            weights /= weights.sum()
-            gc.collect()
-            progress.update(iteration_task, advance=1)
+                # Asymmetric weight update to match original classifier.weight_update():
+                # - treat ground truth -1 as 0 (only positive class matters for boosting)
+                # - treat prediction 1 as 0; prediction -1 stays -1
+                # - boost weights only for (ground_truth==1 and prediction==-1)
+                mispred_pos = ((pairs.y == 1) & (pred == -1)).astype(np.int8)
+                weights = weights * np.where(mispred_pos == 1, np.exp(confidence), 1.0)
+                weights /= weights.sum()
+                gc.collect()
+                progress.update(iteration_task, advance=1)
+    finally:
+        # restore previous logger level
+        try:
+            logger.log.setLevel(_old_level)
+        except Exception:
+            pass

@@ -1,6 +1,8 @@
 import os
 from configparser import ConfigParser
-from utils.preprocessing import apply_bin_concatenation, load_and_concat_csv,generate_filters_dataframe, clean_df
+import sys
+sys.path.append(os.path.dirname(__file__))
+from pre_processing.utils.preprocessing import apply_bin_concatenation, load_and_concat_csv,generate_filters_dataframe, clean_df
 
 # -------------------
 # 1. Create binary concatenated interim used for all the binary operations. Read all the binary files and create the binary_U_concatenated.csv and the hex_full.csv (after cleaning) in the interim folder.
@@ -8,12 +10,17 @@ from utils.preprocessing import apply_bin_concatenation, load_and_concat_csv,gen
 # 
 # –------------------
 
-def data_preprocess():
-    # read configuration
-    config = ConfigParser()
-    config_filename = "config_preprocessing.ini"
-    full_config_name = os.path.join(os.path.dirname(__file__), config_filename)
-    config.read(full_config_name)
+def data_preprocess(config=None, config_file = "config_preprocessing.ini"):
+    if config is not None:
+        print("Using provided configuration object.")
+        
+    elif config_file is not None:
+        # read configuration
+        config = ConfigParser()
+        config_filename = "config_preprocessing.ini"
+        full_config_name = os.path.join(os.path.dirname(__file__), config_filename)
+        config.read(full_config_name)
+        
     binary_path = config["DEFAULT"]["binary_path"]
     output_path = config["DEFAULT"]["output_path"]
 
